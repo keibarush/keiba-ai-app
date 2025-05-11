@@ -1,11 +1,18 @@
 import streamlit as st
 import json
 import requests
+from urllib.parse import parse_qs
 
 st.set_page_config(page_title="AI競馬レポート", layout="wide")
-st.title("AI競馬予想レポート｜自動読込モード")
+st.title("AI競馬予想レポート（会員モード付き）")
 
-# GitHub上のjsonフォルダから最新ファイルを取得
+# === アクセス制御 ===
+query = st.experimental_get_query_params()
+access_key = parse_qs(str(query)).get("access", [""])[0]
+
+is_full_access = access_key == "devpass"  # ← あなた専用パスワード
+
+# === GitHubから最新JSONを取得 ===
 def get_latest_json_from_github():
     url = "https://api.github.com/repos/keibarush/keiba-ai-app/contents/json"
     res = requests.get(url).json()
@@ -15,51 +22,43 @@ def get_latest_json_from_github():
 
 try:
     data = get_latest_json_from_github()
-    st.success("最新のAIレポートを読み込みました！")
+    st.success("✅ 最新のAIレポートを読み込みました！")
 
-    with st.expander("0. ユーザーカスタム設定", expanded=False):
-        st.json(data.get("section_0", {}))
+    # === ハイライト表示（本命◎のみ or フル） ===
+    with st.expander("1. モバイル用ハイライト", expanded=True):
+        hl = data.get("section_1", {}).get("モバイル用ハイライト", {})
+        st.metric("本命", hl.get("本命", "―"))
 
-    with st.expander("1. モバイル用ハイライト", expanded=False):
-        st.json(data.get("section_1", {}))
+        if is_full_access:
+            col1, col2 = st.columns(2)
+            col1.metric("ROI", hl.get("ROI", "―"))
+            col2.metric("Hit率", hl.get("Hit率", "―"))
+            st.markdown(f"○ 対抗：{hl.get('対抗', '―')}　▲ 穴：{hl.get('穴', '―')}")
+        else:
+            st.warning("※フル機能を利用するにはゴールド会員または devpass が必要です。")
 
-    for i in range(2, 13):
-        with st.expander(f"{i}. セクション内容", expanded=False):
-            st.write(data.get(f"section_{i}", "―"))
-
-    with st.expander("13. 馬別スペック評価", expanded=False):
-        horses = data.get("section_13", {}).get("馬別スペック評価", [])
-        for horse in horses:
-            st.markdown(f"- **{horse['馬番']}番** {horse['馬名']}（{horse['枠']}）｜評価：{horse['評価ランク']}｜支持率：{horse['支持率']}")
-
-    with st.expander("14. データ取得ログ", expanded=False):
-        st.info(data.get("section_14", {}).get("データ取得ログ", "―"))
-
-    with st.expander("15. 異常アラート", expanded=False):
-        for alert in data.get("section_15", {}).get("異常アラート", []):
-            st.warning(alert)
-
-    with st.expander("16. 展開予測", expanded=False):
-        st.write(data.get("section_16", {}).get("展開予測", "―"))
-
-    with st.expander("17. 展開影響の深掘り", expanded=False):
-        st.write(data.get("section_17", {}).get("展開影響深掘り", "―"))
-
-    with st.expander("18. 推奨馬ピックアップ", expanded=False):
-        st.success("推奨馬：" + "、".join(data.get("section_18", {}).get("推奨馬ピックアップ", [])))
-
+    # === ケリーベット構築（制限あり） ===
     with st.expander("19. ベット構築（ケリー基準）", expanded=False):
-        for bet in data.get("section_19", {}).get("ベット構築例", []):
-            st.markdown(
-                f"- **{bet['券種']}**｜{bet['買い目']}｜的中率：{bet['確率']}｜期待値：{bet['期待値']}｜"
-                f"Kelly比率：{bet['Kelly比率']}｜推奨金額：{bet['推奨金額']}"
-            )
+        bets = data.get("section_19", {}).get("ベット構築例", [])
+        if is_full_access:
+            for bet in sorted(bets, key=lambda x: float(x["Kelly比率"]), reverse=True):
+                st.markdown(
+                    f"- **{bet['券種']}**｜{bet['買い目']}｜的中率：{bet['確率']}｜期待値：{bet['期待値']}｜"
+                    f"Kelly：{bet['Kelly比率']}｜推奨金額：{bet['推奨金額']}"
+                )
+        else:
+            st.error("このセクションはゴールド会員専用です。")
 
-    with st.expander("20. バックテスト記録", expanded=False):
-        st.write(data.get("section_20", {}))
+    # === その他セクション（フルアクセスのみ展開） ===
+    if is_full_access:
+        for i in range(0, 22):
+            if i in [1, 19]: continue
+            key = f"section_{i}"
+            content = data.get(key, {})
+            with st.expander(f"{i}. セクション", expanded=False):
+                st.json(content)
+    else:
+        st.info("※一部セクションは非表示です。全機能解放にはパスコードが必要です。")
 
-    with st.expander("21. 次回改善アクション", expanded=False):
-        st.write(data.get("section_21", {}))
-
-except:
-    st.error("GitHubから最新のレポートを取得できませんでした。JSONファイルのアップロードを確認してください。")
+except Exception as e:
+    st.error(f"GitHubからの読み込みに失敗しました：{e}")

@@ -1,17 +1,21 @@
 import streamlit as st
+import pandas as pd
+import json
+import os
 
-# タイトル
+st.set_page_config(
+    page_title="競馬AI 推奨買い目アプリ",
+    page_icon=":horse:",
+    layout="centered"
+)
+
 st.title("競馬AI 推奨買い目アプリ")
+st.markdown("""
+このアプリでは、AIが分析した**推奨買い目**を自動表示します。
 
-# 推奨買い目（仮データ、後でAIと接続）
-tansho = 5
-umaren = (3, 5)
-sanrenpuku = (3, 5, 7)
-sanrentan = (5, 3, 7)
+- データはあなたがColabなどで作成した `.json` ファイルから読み込みます。
+- 単勝・馬連・三連複・三連単を推奨します。
+- **アップロードすればすぐに結果が見える**仕組みです！
 
-# 表示
-st.subheader("◎ AI推奨買い目")
-st.write("◎ 単勝：", tansho)
-st.write("◎ 馬連：", umaren)
-st.write("◎ 三連複：", sanrenpuku)
-st.write("◎ 三連単：", sanrentan)
+---
+""")

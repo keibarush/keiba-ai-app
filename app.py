@@ -1,52 +1,39 @@
 import streamlit as st
 import pandas as pd
 import json
-import os
 
-st.set_page_config(
-    page_title="競馬AI 推奨買い目アプリ",
-    page_icon="horse:",
-    layout="centered"
-)
+st.set_page_config(page_title="AI競馬予想アプリ", layout="centered")
 
-st.title("競馬AI 推奨買い目アプリ")
-st.markdown("""
-このアプリでは、AIが分析した**推奨買い目**を自動表示します。
+st.title("1レース・2モード AI競馬予想")
 
-- データはあなたがColabなどで作成した `.json` ファイルから読み込みます。
-- 単勝・馬連・三連複・三連単を推奨します。
-- **アップロードすればすぐに結果が見える**しくみです！
-""")
+# --- モード選択 ---
+mode = st.radio("モードを選んでください：", ["勝ち馬特化型（KEIBA RUSH）", "推し馬特化型（推し展開メーカー）"])
 
-# ファイルアップロード
-uploaded_files = st.file_uploader("複数のJSONファイルをアップロード", type="json", accept_multiple_files=True)
+# --- ファイルアップロード共通処理 ---
+uploaded_file = st.file_uploader("推奨JSONファイル（例：buy_20250511_東京_11R.json）をアップロード", type="json")
 
-if uploaded_files:
-    data_list = []
+if uploaded_file:
+    data = json.load(uploaded_file)
 
-    for file in uploaded_files:
-        filename = file.name.replace(".json", "")
-        parts = filename.split("_")
-        if len(parts) == 4:
-            _, date, place, race = parts
-        else:
-            st.warning(f"ファイル名が形式に合っていません: {filename}")
-            continue
+    if mode == "勝ち馬特化型（KEIBA RUSH）":
+        st.subheader("【KEIBA RUSH突入】")
+        st.markdown("**CHANCE ZONE → 展開完成 → RUSH発動！**")
+        st.markdown("---")
+        st.write("◎ 単勝：", data.get("tansho"))
+        st.write("◎ 馬連：", data.get("umaren"))
+        st.write("◎ 三連複：", data.get("sanrenpuku"))
+        st.write("◎ 三連単：", data.get("sanrentan"))
+        st.success("報酬期待値が最大になる組み合わせが自動表示されました！")
 
-        buy = json.load(file)
+    elif mode == "推し馬特化型（推し展開メーカー）":
+        st.subheader("【推し展開メーカー】")
+        oshiuma = st.text_input("あなたの推し馬（馬名）を入力してください")
 
-        data_list.append({
-            "日付": date,
-            "競馬場": place,
-            "レース": race,
-            "単勝": buy.get("tansho"),
-            "馬連": buy.get("umaren"),
-            "三連複": buy.get("sanrenpuku"),
-            "三連単": buy.get("sanrentan")
-        })
-
-    df = pd.DataFrame(data_list)
-    df = df.sort_values(by=["日付", "競馬場", "レース"])
-    st.dataframe(df)
+        if oshiuma:
+            st.markdown(f"### 推し馬「{oshiuma}」")
+            st.markdown("> if展開ストーリー：")
+            st.info(f"{oshiuma}は道中内ラチ沿いを追走し、直線で一気の末脚！夢の勝利へ！")
+            st.write("◎ 応援三連複：", data.get("sanrenpuku"))
+            st.button("全力応援する！")
 else:
-    st.info("左で複数の `buy_*.json` ファイルをアップロードしてください。")
+    st.info("上からモードを選んで `.json` ファイルをアップロードしてください。")

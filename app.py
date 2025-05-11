@@ -1,34 +1,20 @@
 import streamlit as st
 import json
 import requests
-from datetime import datetime
 
-# === 設定 ===
-repo_owner = "keibarush"
-repo_name = "keiba-ai-app"
-folder = "json"
+st.set_page_config(page_title="AI競馬レポート", layout="wide")
+st.title("AI競馬予想レポート｜自動読込モード")
 
-st.set_page_config(page_title="AI競馬レポート | 自動表示モード", layout="wide")
-st.title("AI競馬予想レポート ｜ 自動読込＆常時更新")
+# GitHub上のjsonフォルダから最新ファイルを取得
+def get_latest_json_from_github():
+    url = "https://api.github.com/repos/keibarush/keiba-ai-app/contents/json"
+    res = requests.get(url).json()
+    json_files = [f for f in res if f["name"].endswith(".json")]
+    latest = max(json_files, key=lambda f: f["name"])
+    return requests.get(latest["download_url"]).json()
 
-# GitHub API から最新のJSONファイルを取得
-def get_latest_json_from_github(owner, repo, folder):
-    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{folder}"
-    response = requests.get(url)
-    files = response.json()
-    
-    json_files = [f for f in files if f['name'].endswith('.json')]
-    if not json_files:
-        return None
-
-    latest_file = max(json_files, key=lambda x: x['name'])
-    json_url = latest_file['download_url']
-    return requests.get(json_url).json()
-
-# JSON取得と表示
-data = get_latest_json_from_github(repo_owner, repo_name, folder)
-
-if data:
+try:
+    data = get_latest_json_from_github()
     st.success("最新のAIレポートを読み込みました！")
 
     with st.expander("0. ユーザーカスタム設定", expanded=False):
@@ -43,11 +29,8 @@ if data:
 
     with st.expander("13. 馬別スペック評価", expanded=False):
         horses = data.get("section_13", {}).get("馬別スペック評価", [])
-        if horses:
-            for horse in horses:
-                st.markdown(f"- **{horse['馬番']}番** {horse['馬名']}（{horse['枠']}）｜評価：{horse['評価ランク']}｜支持率：{horse['支持率']}")
-        else:
-            st.info("馬別スペック評価が見つかりません")
+        for horse in horses:
+            st.markdown(f"- **{horse['馬番']}番** {horse['馬名']}（{horse['枠']}）｜評価：{horse['評価ランク']}｜支持率：{horse['支持率']}")
 
     with st.expander("14. データ取得ログ", expanded=False):
         st.info(data.get("section_14", {}).get("データ取得ログ", "―"))
@@ -78,5 +61,5 @@ if data:
     with st.expander("21. 次回改善アクション", expanded=False):
         st.write(data.get("section_21", {}))
 
-else:
-    st.error("GitHubから最新のレポートが取得できませんでした。JSONファイルがアップロードされているか確認してください。")
+except:
+    st.error("GitHubから最新のレポートを取得できませんでした。JSONファイルのアップロードを確認してください。")

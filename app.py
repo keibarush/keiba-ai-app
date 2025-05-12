@@ -1,17 +1,29 @@
 import streamlit as st
 
-# タイトル
-st.title("AI競馬予想レポート（会員モード付き）")
+groq_path = "/content/drive/MyDrive/keiba-ai/groq_result.txt"
 
-# groq_result.txt のパス
-groq_path = "./groq_result.txt"
-
-# ファイル読み込みと表示
 try:
     with open(groq_path, "r", encoding="utf-8") as f:
-        groq_text = f.read()
-        st.success("✅ 最新のAIレポートを読み込みました！")
-        st.subheader("モバイル用ハイライト")
-        st.markdown(groq_text)
+        lines = f.readlines()
+        st.subheader("AI展開別レポート")
+
+        section = ""
+        content = ""
+        for line in lines:
+            line = line.strip()
+            if line.startswith("◎"):
+                if section:
+                    with st.expander(section):
+                        st.markdown(content)
+                section = line
+                content = ""
+            else:
+                content += line + "\n"
+
+        # 最後のセクション
+        if section:
+            with st.expander(section):
+                st.markdown(content)
+
 except FileNotFoundError:
-    st.error("❌ groq_result.txt が見つかりません。Colabでの保存を確認してください。")
+    st.error("groq_result.txt が見つかりません。Colabで保存されているか確認してください。")

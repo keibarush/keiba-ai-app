@@ -1,29 +1,20 @@
 import streamlit as st
 
+# --- パスコード認証セクション ---
+st.sidebar.title("会員モードログイン")
+devpass = st.sidebar.text_input("パスコードを入力してください", type="password")
+
+if devpass != "gold123":
+    st.error("※フル機能を利用するにはゴールド会員または devpass が必要です。")
+    st.stop()
+
+# --- groq_result.txt の表示セクション ---
 groq_path = "/content/drive/MyDrive/keiba-ai/groq_result.txt"
 
 try:
     with open(groq_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-        st.subheader("AI展開別レポート")
-
-        section = ""
-        content = ""
-        for line in lines:
-            line = line.strip()
-            if line.startswith("◎"):
-                if section:
-                    with st.expander(section):
-                        st.markdown(content)
-                section = line
-                content = ""
-            else:
-                content += line + "\n"
-
-        # 最後のセクション
-        if section:
-            with st.expander(section):
-                st.markdown(content)
-
+        groq_text = f.read()
+        st.subheader("Groq AI予測レポート")
+        st.text(groq_text)
 except FileNotFoundError:
-    st.error("groq_result.txt が見つかりません。Colabで保存されているか確認してください。")
+    st.error("groq_result.txt が見つかりません。Colab での保存を確認してください。")

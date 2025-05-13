@@ -1,33 +1,24 @@
 import streamlit as st
+import json
 import os
 
-# タイトル
-st.title("AI競馬予想レポート（会員モード付き）")
+st.set_page_config(page_title="VibeCore 競馬予想", layout="wide")
 
-# パスワード認証
-st.sidebar.title("会員モードログイン")
-devpass = st.sidebar.text_input("パスワードを入力してください", type="password")
+st.title("VibeCore - AI競馬予想")
 
-if devpass != "gold123":
-    st.error("※フル機能を使うにはゴールド会員または devpass が必要です。")
-    st.stop()
+# ファイルパス（あなたのDriveのJSONファイルを手動DL or パス修正）
+json_path = '予想_20250513_funa11.json'  # ← 同じフォルダに配置しておく前提
 
-# 入力フォーム
-st.sidebar.header("レース選択")
-race_date = st.sidebar.text_input("日付を入力（例：20250513）", max_chars=8)
-race_place = st.sidebar.text_input("競馬場コード（例：funabashi）", max_chars=20)
-race_no = st.sidebar.text_input("レース番号（例：11）", max_chars=2)
+if os.path.exists(json_path):
+    with open(json_path, 'r', encoding='utf-8') as f:
+        prediction = json.load(f)
+    
+    st.subheader(f"レース情報：{prediction.get('レース', '不明')}")
+    st.markdown("### ◎ 本命・対抗・穴")
+    st.write(prediction.get("本命", "データなし"))
 
-# ファイル名とパス
-file_name = f"groq_result_{race_date}_{race_place}_{race_no}.txt"
-groq_path = f"/content/drive/MyDrive/keiba-ai/{file_name}"
-
-# ファイル読み込み
-try:
-    with open(groq_path, "r", encoding="utf-8") as f:
-        groq_text = f.read()
-        st.success("✅ 最新のAIレポートを読み込みました！")
-        st.subheader("モバイル用ハイライト")
-        st.text(groq_text)
-except FileNotFoundError:
-    st.error(f"❌ {file_name} が見つかりません。Colab で保存されているか確認してください。")
+    st.markdown("### 買い目（ケリー基準）")
+    for bet in prediction.get("ケリー買い目", []):
+        st.write(f"- {bet}")
+else:
+    st.error("予想ファイルが見つかりません。")

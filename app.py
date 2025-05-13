@@ -23,51 +23,48 @@ if os.path.exists(json_path):
 else:
     st.error("予想ファイルが見つかりません。")
 
-# === ケリー基準 計算表示 ===
+# === ケリー基準：勝率ファイルから読み込み ===
 
 st.markdown("---")
 st.header("ケリー基準による推奨買い目")
 
-# 仮のAI勝率（将来は自動取得予定）
-win_probs = {
-    "1番": 0.25,
-    "2番": 0.15,
-    "3番": 0.30,
-    "4番": 0.10,
-    "5番": 0.20,
-}
+win_prob_path = '勝率_20250513_funa11.json'  # ← Colabから保存・アップした勝率ファイル名
 
-# 仮の単勝オッズ（将来は自動取得予定）
-win_odds = {
-    "1番": 3.2,
-    "2番": 7.5,
-    "3番": 2.8,
-    "4番": 11.0,
-    "5番": 4.0,
-}
+if os.path.exists(win_prob_path):
+    with open(win_prob_path, 'r', encoding='utf-8') as f:
+        win_probs = json.load(f)
 
-# ケリー式
-def kelly(p, o):
-    b = o - 1
-    q = 1 - p
-    return round((b * p - q) / b, 3) if (b * p - q) > 0 else 0
+    # 仮の単勝オッズ（後で自動化予定）
+    win_odds = {
+        "1番": 3.2,
+        "2番": 7.5,
+        "3番": 2.8,
+        "4番": 11.0,
+        "5番": 4.0,
+    }
 
-# 表生成
-results = []
-for horse in win_probs:
-    p = win_probs[horse]
-    o = win_odds[horse]
-    k = kelly(p, o)
-    results.append({"馬番": horse, "勝率": f"{p*100:.1f}%", "オッズ": o, "ケリースコア": k})
+    # ケリー式計算
+    def kelly(p, o):
+        b = o - 1
+        q = 1 - p
+        return round((b * p - q) / b, 3) if (b * p - q) > 0 else 0
 
-df = pd.DataFrame(results).sort_values(by="ケリースコア", ascending=False)
+    # 表生成
+    results = []
+    for horse in win_probs:
+        p = win_probs[horse]
+        o = win_odds.get(horse, 0)
+        k = kelly(p, o)
+        results.append({"馬番": horse, "勝率": f"{p*100:.1f}%", "オッズ": o, "ケリースコア": k})
 
-st.subheader("ケリースコア 一覧（高い順）")
-st.dataframe(df)
+    df = pd.DataFrame(results).sort_values(by="ケリースコア", ascending=False)
+    st.subheader("ケリースコア 一覧（高い順）")
+    st.dataframe(df)
 
-# 資金配分例（仮：1000円）
-total_score = df["ケリースコア"].sum()
-if total_score > 0:
-    df["推奨金額"] = df["ケリースコア"].apply(lambda x: round(1000 * x / total_score))
-    st.subheader("推奨購入金額（仮予算1000円）")
-    st.dataframe(df[["馬番", "オッズ", "ケリースコア", "推奨金額"]])
+    total_score = df["ケリースコア"].sum()
+    if total_score > 0:
+        df["推奨金額"] = df["ケリースコア"].apply(lambda x: round(1000 * x / total_score))
+        st.subheader("推奨購入金額（仮予算1000円）")
+        st.dataframe(df[["馬番", "オッズ", "ケリースコア", "推奨金額"]])
+else:
+    st.error("勝率ファイルが見つかりません。")

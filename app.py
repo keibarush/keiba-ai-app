@@ -5,12 +5,12 @@ import json
 st.set_page_config(page_title="VibeCore", layout="wide")
 st.title("VibeCore｜AI競馬 勝率 × ケリー指数")
 
-# 勝率JSONの読み込み
-with open("vibecore/勝率_20250513_funa11.json", encoding="utf-8") as f:
+# 勝率JSONの読み込み（パス修正済）
+with open("./vibecore/勝率_20250513_funa11.json", encoding="utf-8") as f:
     win_probs = json.load(f)
 
-# オッズJSONの読み込み
-with open("vibecore/オッズ_20250513_funa11.json", encoding="utf-8") as f:
+# オッズJSONの読み込み（パス修正済）
+with open("./vibecore/オッズ_20250513_funa11.json", encoding="utf-8") as f:
     odds_data = json.load(f)
 
 # オッズを辞書化（馬番: オッズ）

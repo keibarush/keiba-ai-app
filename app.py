@@ -21,23 +21,27 @@ st.set_page_config(page_title="VibeCore", layout="wide")
 # タイトル
 st.title("VibeCore｜勝利の鼓動 × 勝ちの直感")
 
-# サイドバーのメニュー（選択肢に「商品一覧」を追加）
+# サイドバーのメニュー（新機能を追加）
 menu = st.sidebar.radio("機能を選択してください", [
     "AI競馬予測",
     "Stripe決済（サブスク／HEART／NFT）",
     "予想師コミュニティ",
     "バトルパスチャレンジ",
-    "商品一覧",  # 追加
+    "商品一覧",
+    "HEART残高と履歴",  # 追加
+    "NFTコレクション",  # 追加
     "管理ダッシュボード"
 ], key="menu_select")
 
 # セッション状態の初期化
 if "checked_horses" not in st.session_state:
     st.session_state.checked_horses = []
-if "heart_token" not in st.session_state:
-    st.session_state.heart_token = 0
-if "nft_collection" not in st.session_state:
-    st.session_state.nft_collection = {}
+if "heart_balance" not in st.session_state:
+    st.session_state.heart_balance = 200  # 初期値
+if "heart_history" not in st.session_state:
+    st.session_state.heart_history = []  # HEART利用履歴
+if "nft_inventory" not in st.session_state:
+    st.session_state.nft_inventory = []  # NFTコレクション
 if "subscription_status" not in st.session_state:
     st.session_state.subscription_status = None
 if "payment_history" not in st.session_state:
@@ -69,17 +73,17 @@ st.session_state.user_settings["emotion"] = st.sidebar.slider("感情係数（�
 style_options = ["保守的", "バランス", "攻撃的"]
 st.session_state.user_settings["style"] = st.sidebar.selectbox("補正スタイル", style_options, index=style_options.index("バランス"))
 
-# メニュー内検索（新規追加）
+# メニュー内検索
 search_query = st.sidebar.text_input("メニュー内検索", placeholder="機能名を入力（例：AI競馬予測）")
 filtered_menu = menu
 if search_query:
-    filtered_menu = [m for m in ["AI競馬予測", "Stripe決済（サブスク／HEART／NFT）", "予想師コミュニティ", "バトルパスチャレンジ", "商品一覧", "管理ダッシュボード"] if search_query.lower() in m.lower()]
+    filtered_menu = [m for m in ["AI競馬予測", "Stripe決済（サブスク／HEART／NFT）", "予想師コミュニティ", "バトルパスチャレンジ", "商品一覧", "HEART残高と履歴", "NFTコレクション", "管理ダッシュボード"] if search_query.lower() in m.lower()]
     if filtered_menu:
         menu = filtered_menu[0]
     else:
         st.sidebar.warning("該当するメニューが見つかりません。")
 
-# ユーザーアクティビティ通知（新規追加）
+# ユーザーアクティビティ通知
 st.sidebar.markdown("## アクティビティ通知")
 if st.session_state.battle_pass["points"] >= 100:
     st.sidebar.markdown(f"🎉 バトルパスポイントが100pt達成！報酬を確認してください。")
@@ -87,13 +91,13 @@ if st.session_state.votes:
     total_votes = sum(st.session_state.votes.values())
     st.sidebar.markdown(f"📊 現在の総投票数：{total_votes}票")
 
-# クイックアクセスボタン（新規追加）
+# クイックアクセスボタン
 st.sidebar.markdown("## クイックアクセス")
 if st.button("バトルパス進捗を確認", key="quick_battle_pass"):
     st.session_state.menu_select = "バトルパスチャレンジ"
 if st.session_state.purchases:
     if st.button("最近の購入履歴を確認", key="quick_purchases"):
-        st.session_state.menu_select = "Stripe決済（サブスク／HEART／NFT）"
+        st.session_state.menu_select = "Stripe決済（サブスク／HEART／NFT）")
 
 # メニュー選択時の演出
 if menu:
@@ -213,7 +217,7 @@ if menu == "AI競馬予測":
             # レース基本情報（ステップ3）
             st.markdown("### レース基本情報")
             race_info = {
-                "日時": "2025年5月15日 02:00",
+                "日時": "2025年5月15日 02:30",
                 "距離": "1200m",
                 "馬場": "良" if random.random() > 0.5 else "重",
                 "出走馬": len(df)
@@ -276,16 +280,24 @@ if menu == "AI競馬予測":
 
                     # HEART投票（ステップ16）
                     if st.button(f"{row['馬番']}に10HEARTで応援投票", key=f"vote_{row['馬番']}"):
-                        if st.session_state.heart_token >= 10:
-                            st.session_state.heart_token -= 10
+                        if st.session_state.heart_balance >= 10:
+                            st.session_state.heart_balance -= 10
                             st.session_state.votes[row['馬番']] = st.session_state.votes.get(row['馬番'], 0) + 1
+                            st.session_state.heart_history.append({
+                                "action": f"投票（馬番{row['馬番']}）",
+                                "amount": -10,
+                                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            })
                             st.markdown(f"""
                             <div style='text-align: center; padding: 12px; background: linear-gradient(#FFD700, #FF69B4); border-radius: 12px;'>
                                 <h4 style='color: white; text-shadow: 1px 1px 2px #000;'>🎉 投票ありがとう！ 🎉</h4>
                                 <div style='width: 50px; height: 50px; background: #FF69B4; border-radius: 50%; margin: 0 auto; animation: pulse 2s infinite;'></div>
                                 <p style='color: white;'>現在の投票数：{st.session_state.votes[row['馬番']]}</p>
+                                <p style='color: white;'>HEART残高：{st.session_state.heart_balance}</p>
                             </div>
                             """, unsafe_allow_html=True)
+                        else:
+                            st.error("HEARTが不足しています。商品一覧からチャージしてください。")
 
                     # 結論（ステップ12）
                     win_chance = "A" if row["勝利の鼓動 × 勝ちの直感（％）"] >= 50 else "B" if row["勝利の鼓動 × 勝ちの直感（％）"] >= 30 else "C"
@@ -301,7 +313,7 @@ if menu == "AI競馬予測":
                         </div>
                         """, unsafe_allow_html=True)
 
-# Stripe決済（ステップ17）
+# Stripe決済（ステップ17、Webhook準備を追加）
 elif menu == "Stripe決済（サブスク／HEART／NFT）":
     st.markdown("## プレミアム応援プラン")
     plan = st.radio("プランを選択", ["ライト（100円/月）", "スタンダード（500円/月）", "VIP（1000円/月）"])
@@ -319,6 +331,7 @@ elif menu == "Stripe決済（サブスク／HEART／NFT）":
             cancel_url=CANCEL_URL,
             metadata={"user_id": "user_123", "type": "subscription", "plan": plan}
         )
+        st.session_state.purchases.append(f"サブスク：{plan}")
         st.markdown(f"""
         <a href="{session.url}" target="_blank">
             <button style='background: linear-gradient(#FFD700, #FF69B4); color: white; border: none; padding: 1em 2em; border-radius: 8px; font-size: 16px; animation: pulse 2s infinite;'>
@@ -343,6 +356,15 @@ elif menu == "Stripe決済（サブスク／HEART／NFT）":
             cancel_url=CANCEL_URL,
             metadata={"user_id": "user_123", "type": "heart", "amount": heart_plan.split("（")[0]}
         )
+        st.session_state.purchases.append(f"HEART購入：{heart_plan}")
+        # ダミー：購入後のHEART付与（Webhook実装時に置き換え）
+        amount = int(heart_plan.split("HEART")[0])
+        st.session_state.heart_balance += amount
+        st.session_state.heart_history.append({
+            "action": f"HEART購入（{heart_plan}）",
+            "amount": amount,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
         st.markdown(f"""
         <a href="{session.url}" target="_blank">
             <button style='background: linear-gradient(#FFD700, #FF69B4); color: white; border: none; padding: 1em 2em; border-radius: 8px; font-size: 16px; animation: pulse 2s infinite;'>
@@ -367,6 +389,11 @@ elif menu == "Stripe決済（サブスク／HEART／NFT）":
             cancel_url=CANCEL_URL,
             metadata={"user_id": "user_123", "type": "nft", "item": nft_plan}
         )
+        st.session_state.purchases.append(f"NFT購入：{nft_plan}")
+        # ダミー：購入後のNFT付与（Webhook実装時に置き換え）
+        rarity = "ウルトラレア" if "ガチャ" in nft_plan and random.random() > 0.9 else "レア"
+        nft_item = {"name": f"{nft_plan}（{rarity}）", "rarity": rarity, "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        st.session_state.nft_inventory.append(nft_item)
         st.markdown(f"""
         <a href="{session.url}" target="_blank">
             <button style='background: linear-gradient(#FFD700, #FF69B4); color: white; border: none; padding: 1em 2em; border-radius: 8px; font-size: 16px; animation: pulse 2s infinite;'>
@@ -413,20 +440,27 @@ elif menu == "予想師コミュニティ":
         """, unsafe_allow_html=True)
         points = st.selectbox("投げ銭ポイントを選択", [10, 50, 100], key=f"tip_points_{forecast_id}")
         if st.button(f"{points} HEARTで応援", key=f"tip_{forecast_id}"):
-            if st.session_state.heart_token >= points:
-                st.session_state.heart_token -= points
+            if st.session_state.heart_balance >= points:
+                st.session_state.heart_balance -= points
                 st.session_state.forecasts[forecast_id]["hearts"] += points
+                st.session_state.heart_history.append({
+                    "action": f"投げ銭（ユーザー{forecast['user_id']}）",
+                    "amount": -points,
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
                 st.markdown(f"""
                 <div style='text-align: center; padding: 12px; background: linear-gradient(#FFD700, #FF69B4); border-radius: 12px;'>
                     <h4 style='color: white; text-shadow: 1px 1px 2px #000;'>🎉 応援ありがとう！ 🎉</h4>
                     <div style='width: 50px; height: 50px; background: #FF69B4; border-radius: 50%; margin: 0 auto; animation: pulse 2s infinite;'></div>
                     <p style='color: white;'>{points} HEARTを贈りました！</p>
+                    <p style='color: white;'>HEART残高：{st.session_state.heart_balance}</p>
                 </div>
                 """, unsafe_allow_html=True)
+            else:
+                st.error("HEARTが不足しています。商品一覧からチャージしてください。")
 
 # バトルパスチャレンジ（ステップ㉓）
 elif menu == "バトルパスチャレンジ":
-    # ミッションCSV（ソロフリーランス向け）
     missions_df = pd.DataFrame([
         {"id": "M1", "label": "3日連続ログイン", "points": 10, "premium_reward": "プレミアム称号「ログインスター」（金＋虹）", "category": "無料", "type": "daily"},
         {"id": "M2", "label": "推し馬に10HEART投票", "points": 15, "premium_reward": "限定演出（背景：応援ペンライト＋金ハート）", "category": "無料", "type": "cheer"},
@@ -459,6 +493,17 @@ elif menu == "バトルパスチャレンジ":
                 st.session_state.battle_pass["points"] += mission["pt"]
                 if st.session_state.battle_pass["premium"]:
                     st.session_state.battle_pass["rewards"].append(mission["premium_reward"])
+                    if "NFT" in mission["premium_reward"]:
+                        nft_item = {"name": mission["premium_reward"], "rarity": "SSR" if "SSR" in mission["premium_reward"] else "レア", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+                        st.session_state.nft_inventory.append(nft_item)
+                # HEART報酬（例：100pt達成で100HEART）
+                if st.session_state.battle_pass["points"] >= 100 and "背景NFT" in mission["premium_reward"]:
+                    st.session_state.heart_balance += 100
+                    st.session_state.heart_history.append({
+                        "action": "バトルパス報酬（100pt達成）",
+                        "amount": 100,
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    })
                 st.markdown(f"""
                 <div style='text-align: center; padding: 12px; background: linear-gradient(#FFD700, #FF69B4); border-radius: 12px;'>
                     <h4 style='color: white; text-shadow: 1px 1px 2px #000;'>🎉 ミッション達成！ 🎉</h4>
@@ -495,6 +540,38 @@ elif menu == "商品一覧":
         st.error("商品一覧.py が見つかりません。ファイルを確認してください。")
     except Exception as e:
         st.error(f"商品一覧ページの読み込み中にエラーが発生しました：{str(e)}")
+
+# HEART残高と履歴（ステップ㉕）
+elif menu == "HEART残高と履歴":
+    st.markdown("## HEART残高と利用履歴")
+    st.markdown(f"**現在のHEART残高：{st.session_state.heart_balance} HEART**")
+    st.markdown("### 利用履歴")
+    if st.session_state.heart_history:
+        for entry in st.session_state.heart_history:
+            color = "green" if entry["amount"] > 0 else "red"
+            st.markdown(f"""
+            <div style='padding: 8px; background: #FFFACD; border-radius: 8px; margin-bottom: 4px;'>
+                <p style='color: #666;'>{entry['action']}：<span style='color: {color};'>{entry['amount']} HEART</span>（{entry['timestamp']}）</p>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.markdown("まだ利用履歴はありません。")
+
+# NFTコレクション（ステップ㉖）
+elif menu == "NFTコレクション":
+    st.markdown("## あなたのNFTコレクション")
+    if st.session_state.nft_inventory:
+        for item in st.session_state.nft_inventory:
+            card_color = "linear-gradient(#FFD700, #FF69B4)" if item["rarity"] == "ウルトラレア" else "#FF69B4"
+            st.markdown(f"""
+            <div style='padding: 12px; background: {card_color}; border-radius: 12px; margin-bottom: 8px; color: white;'>
+                <h5 style='margin-bottom: 4px;'>{item['name']}</h5>
+                <p style='color: white;'>レア度：{item['rarity']}<br>獲得日：{item['timestamp']}</p>
+                <button style='background: white; color: #FF69B4; border: none; padding: 8px 16px; border-radius: 8px;'>Xでシェア</button>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.markdown("まだNFTはありません。商品一覧から購入してください。")
 
 # 管理者用ダッシュボード（ステップ21）
 elif menu == "管理ダッシュボード":

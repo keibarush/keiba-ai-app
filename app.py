@@ -34,7 +34,7 @@ else:
                     return entry[key]
             return None
 
-        odds_dict = {get(item, "horse", "馬番"): item["odds"] for item in odds_data]
+        odds_dict = {get(item, "horse", "馬番"): item["odds"] for item in odds_data}
 
         rows = []
         for entry in win_probs:

@@ -7,8 +7,13 @@ import random
 from datetime import datetime
 import stripe
 from dotenv import load_dotenv
+# 商品一覧.pyをインポート（execを避ける）
+try:
+    import 商品一覧 as items
+except ImportError:
+    items = None
 
-# 環境変数読み込み（ソロフリーランス向け）
+# 環境変数読み込み
 load_dotenv()
 stripe.api_key = os.getenv("STRIPE_API_KEY", "sk_test_xxx")
 WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_xxx")
@@ -21,15 +26,15 @@ st.set_page_config(page_title="VibeCore", layout="wide")
 # タイトル
 st.title("VibeCore｜勝利の鼓動 × 勝ちの直感")
 
-# サイドバーのメニュー（新機能を追加）
+# サイドバーのメニュー
 menu = st.sidebar.radio("機能を選択してください", [
     "AI競馬予測",
     "Stripe決済（サブスク／HEART／NFT）",
     "予想師コミュニティ",
     "バトルパスチャレンジ",
     "商品一覧",
-    "HEART残高と履歴",  # 追加
-    "NFTコレクション",  # 追加
+    "HEART残高と履歴",
+    "NFTコレクション",
     "管理ダッシュボード"
 ], key="menu_select")
 
@@ -37,11 +42,11 @@ menu = st.sidebar.radio("機能を選択してください", [
 if "checked_horses" not in st.session_state:
     st.session_state.checked_horses = []
 if "heart_balance" not in st.session_state:
-    st.session_state.heart_balance = 200  # 初期値
+    st.session_state.heart_balance = 200
 if "heart_history" not in st.session_state:
-    st.session_state.heart_history = []  # HEART利用履歴
+    st.session_state.heart_history = []
 if "nft_inventory" not in st.session_state:
-    st.session_state.nft_inventory = []  # NFTコレクション
+    st.session_state.nft_inventory = []
 if "subscription_status" not in st.session_state:
     st.session_state.subscription_status = None
 if "payment_history" not in st.session_state:
@@ -66,7 +71,7 @@ if "user_ratings" not in st.session_state:
 if "purchases" not in st.session_state:
     st.session_state.purchases = []
 
-# ユーザーカスタム設定（ステップ0）
+# ユーザーカスタム設定
 st.sidebar.markdown("## ユーザーカスタム設定")
 st.session_state.user_settings["accuracy"] = st.sidebar.slider("予測精度（的中重視/穴重視）", 0.0, 1.0, 0.5)
 st.session_state.user_settings["emotion"] = st.sidebar.slider("感情係数（推し指数重視）", 0.0, 1.0, 0.5)
@@ -75,11 +80,11 @@ st.session_state.user_settings["style"] = st.sidebar.selectbox("補正スタイ�
 
 # メニュー内検索
 search_query = st.sidebar.text_input("メニュー内検索", placeholder="機能名を入力（例：AI競馬予測）")
-filtered_menu = menu
 if search_query:
     filtered_menu = [m for m in ["AI競馬予測", "Stripe決済（サブスク／HEART／NFT）", "予想師コミュニティ", "バトルパスチャレンジ", "商品一覧", "HEART残高と履歴", "NFTコレクション", "管理ダッシュボード"] if search_query.lower() in m.lower()]
     if filtered_menu:
         menu = filtered_menu[0]
+        st.session_state.menu_select = menu  # 検索結果をUIに反映
     else:
         st.sidebar.warning("該当するメニューが見つかりません。")
 
@@ -97,7 +102,7 @@ if st.button("バトルパス進捗を確認", key="quick_battle_pass"):
     st.session_state.menu_select = "バトルパスチャレンジ"
 if st.session_state.purchases:
     if st.button("最近の購入履歴を確認", key="quick_purchases"):
-        st.session_state.menu_select = "Stripe決済（サブスク/HEART/NFT）"
+        st.session_state.menu_select = "Stripe決済（サブスク／HEART／NFT）")
 
 # メニュー選択時の演出
 if menu:
@@ -113,7 +118,7 @@ if menu:
     </style>
     """, unsafe_allow_html=True)
 
-# AI競馬予測セクション（ステップ1〜13）
+# AI競馬予測セクション
 if menu == "AI競馬予測":
     st.markdown("### 勝率またはオッズファイルをアップロード（JSON形式）")
     uploaded_file = st.file_uploader("アップロードしてください（例：win_20250515_monbetsu.json）", type=["json"])
@@ -155,17 +160,17 @@ if menu == "AI競馬予測":
             rows = []
             for entry in win_probs:
                 horse = get(entry, "horse", "馬番")
-                prob = float(get(entry, "prob", "勝率"))
                 prob = get(entry, "prob", "勝率")
                 odds = odds_dict.get(horse)
 
-                # ユーザーカスタム設定を反映
-                adjusted_prob = prob
-                if st.session_state.user_settings["style"] == "保守的":
-                    adjusted_prob *= 0.9
-                elif st.session_state.user_settings["style"] == "攻撃的":
-                    adjusted_prob *= 1.1
-                adjusted_prob = prob * (1 - st.session_state.user_settings["accuracy"]) + prob * st.session_state.user_settings["emotion"]
+                # ユーザ Hofmannカスタム設定を反映
+                adjusted_prob = 0
+                if prob is not None:
+                    adjusted_prob = prob * (1 - st.session_state.user_settings["accuracy"]) + prob * st.session_state.user_settings["emotion"]
+                    if st.session_state.user_settings["style"] == "保守的":
+                        adjusted_prob *= 0.9
+                    elif st.session_state.user_settings["style"] == "攻撃的":
+                        adjusted_prob *= 1.1
 
                 if odds and adjusted_prob is not None:
                     if odds > 1.0:
@@ -176,13 +181,13 @@ if menu == "AI競馬予測":
                 else:
                     score = 0.0
 
-                # 展開分析と馬場バイアス（ステップ4〜6）
+                # 展開分析と馬場バイアス
                 pace = random.choice(["先行", "差し", "逃げ"])
                 track_bias = random.choice(["内有利", "外有利", "フラット"])
                 bias_score = random.uniform(0, 100)
-                if track_bias == "内有利" and int(horse) <= 3:
+                if horse is not None and horse.isdigit() and track_bias == "内有利" and int(horse) <= 3:
                     bias_score += 20
-                elif track_bias == "外有利" and int(horse) > 3:
+                elif horse is not None and horse.isdigit() and track_bias == "外有利" and int(horse) > 3:
                     bias_score += 20
                 bias_score = min(bias_score, 100)
                 bias_color = "green" if bias_score >= 70 else "red" if bias_score < 30 else "yellow"
@@ -215,7 +220,7 @@ if menu == "AI競馬予測":
             df = pd.DataFrame(rows)
             df = df.sort_values("勝利の鼓動 × 勝ちの直感（％）", ascending=False).reset_index(drop=True)
 
-            # レース基本情報（ステップ3）
+            # レース基本情報
             st.markdown("### レース基本情報")
             race_info = {
                 "日時": "2025年5月15日 02:30",
@@ -230,7 +235,7 @@ if menu == "AI競馬予測":
             - **出走馬**：{race_info['出走馬']}頭
             """)
 
-            # モバイル用ハイライト（ステップ1）
+            # モバイル用ハイライト
             st.markdown("### モバイル用ハイライト")
             top_horses = df.head(3)
             for _, horse in top_horses.iterrows():
@@ -238,9 +243,9 @@ if menu == "AI競馬予測":
                 win_chance = "A" if horse["勝利の鼓動 × 勝ちの直感（％）"] >= 50 else "B" if horse["勝利の鼓動 × 勝ちの直感（％）"] >= 30 else "C"
                 st.markdown(f"{symbol} 馬番{horse['馬番']}（勝負度：{win_chance}）")
 
-            # 要点サマリー＋前回比較（ステップ2）
+            # 要点サマリー＋前回比較
             st.markdown("### 要点サマリー＋前回比較")
-            previous_df = df.copy()  # ダミーデータ
+            previous_df = df.copy()
             previous_df["勝利の鼓動 × 勝ちの直感（％）"] = previous_df["勝利の鼓動 × 勝ちの直感（％）"] * 0.9
             for _, row in df.head(3).iterrows():
                 prev_score = previous_df[previous_df["馬番"] == row["馬番"]]["勝利の鼓動 × 勝ちの直感（％）"].values[0] if not previous_df[previous_df["馬番"] == row["馬番"]].empty else row["勝利の鼓動 × 勝ちの直感（％）"]
@@ -256,10 +261,10 @@ if menu == "AI競馬予測":
             )
             st.session_state.checked_horses = current_check
 
-            # テーブル表示（展開分析、馬場バイアス含む）
+            # テーブル表示
             st.dataframe(df, use_container_width=True)
 
-            # あなたの推し馬カード（ステップ11）
+            # あなたの推し馬カード
             st.markdown("### あなたの“推し馬カード”")
             selected_df = df[df["馬番"].isin(st.session_state.checked_horses)]
             if selected_df.empty:
@@ -279,7 +284,7 @@ if menu == "AI競馬予測":
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # HEART投票（ステップ16）
+                    # HEART投票
                     if st.button(f"{row['馬番']}に10HEARTで応援投票", key=f"vote_{row['馬番']}"):
                         if st.session_state.heart_balance >= 10:
                             st.session_state.heart_balance -= 10
@@ -293,28 +298,29 @@ if menu == "AI競馬予測":
                             <div style='text-align: center; padding: 12px; background: linear-gradient(#FFD700, #FF69B4); border-radius: 12px;'>
                                 <h4 style='color: white; text-shadow: 1px 1px 2px #000;'>🎉 投票ありがとう！ 🎉</h4>
                                 <div style='width: 50px; height: 50px; background: #FF69B4; border-radius: 50%; margin: 0 auto; animation: pulse 2s infinite;'></div>
-                                <p style='color: white;'>現在の投票数：{st.session_state.votes[row['馬番']]}</p>
+                                <p style='color: white;'>現在の投票数：{st.session_state.votes.get(row['馬番'], 0)}</p>
                                 <p style='color: white;'>HEART残高：{st.session_state.heart_balance}</p>
                             </div>
                             """, unsafe_allow_html=True)
                         else:
                             st.error("HEARTが不足しています。商品一覧からチャージしてください。")
 
-                    # 結論（ステップ12）
+                    # 結論
                     win_chance = "A" if row["勝利の鼓動 × 勝ちの直感（％）"] >= 50 else "B" if row["勝利の鼓動 × 勝ちの直感（％）"] >= 30 else "C"
                     decision = "買い" if win_chance in ["A", "B"] else "見送り"
                     st.markdown(f"**結論**：勝負度 {win_chance} | {decision} | 狙い馬：馬番{row['馬番']}")
 
-                    # 応援コメント・SNS用（ステップ13）
+                    # 応援コメント・SNS用
                     share_comment = f"馬番{row['馬番']}を信じて勝つ！🏆 #VibeCore"
                     if st.button(f"Xでシェア", key=f"share_{row['馬番']}"):
                         st.markdown(f"""
                         <div style='text-align: center; padding: 12px; background: #FFFACD; border-radius: 12px;'>
                             <p style='color: #333;'>{share_comment}</p>
+                            <p style='color: #666; font-size: 0.9em;'>※このボタンはシェアのプレビューです。本番ではXの共有APIを利用します。</p>
                         </div>
                         """, unsafe_allow_html=True)
 
-# Stripe決済（ステップ17、Webhook準備を追加）
+# Stripe決済
 elif menu == "Stripe決済（サブスク／HEART／NFT）":
     st.markdown("## プレミアム応援プラン")
     plan = st.radio("プランを選択", ["ライト（100円/月）", "スタンダード（500円/月）", "VIP（1000円/月）"])
@@ -358,7 +364,6 @@ elif menu == "Stripe決済（サブスク／HEART／NFT）":
             metadata={"user_id": "user_123", "type": "heart", "amount": heart_plan.split("（")[0]}
         )
         st.session_state.purchases.append(f"HEART購入：{heart_plan}")
-        # ダミー：購入後のHEART付与（Webhook実装時に置き換え）
         amount = int(heart_plan.split("HEART")[0])
         st.session_state.heart_balance += amount
         st.session_state.heart_history.append({
@@ -391,7 +396,6 @@ elif menu == "Stripe決済（サブスク／HEART／NFT）":
             metadata={"user_id": "user_123", "type": "nft", "item": nft_plan}
         )
         st.session_state.purchases.append(f"NFT購入：{nft_plan}")
-        # ダミー：購入後のNFT付与（Webhook実装時に置き換え）
         rarity = "ウルトラレア" if "ガチャ" in nft_plan and random.random() > 0.9 else "レア"
         nft_item = {"name": f"{nft_plan}（{rarity}）", "rarity": rarity, "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         st.session_state.nft_inventory.append(nft_item)
@@ -416,7 +420,7 @@ elif menu == "Stripe決済（サブスク／HEART／NFT）":
     for entry in st.session_state.payment_history:
         st.markdown(f"<p style='color: #666;'>{entry['type']}：{entry.get('plan', '')}{entry.get('amount', '')}{entry.get('item', '')}（{entry.get('rarity', '')}）- {entry['timestamp']}</p>", unsafe_allow_html=True)
 
-# 予想師コミュニティ（ステップ20）
+# 予想師コミュニティ
 elif menu == "予想師コミュニティ":
     st.markdown("## 予想師コミュニティ")
     user_id = "user_123"
@@ -460,17 +464,17 @@ elif menu == "予想師コミュニティ":
             else:
                 st.error("HEARTが不足しています。商品一覧からチャージしてください。")
 
-# バトルパスチャレンジ（ステップ㉓）
+# バトルパスチャレンジ
 elif menu == "バトルパスチャレンジ":
     missions_df = pd.DataFrame([
         {"id": "M1", "label": "3日連続ログイン", "points": 10, "premium_reward": "プレミアム称号「ログインスター」（金＋虹）", "category": "無料", "type": "daily"},
         {"id": "M2", "label": "推し馬に10HEART投票", "points": 15, "premium_reward": "限定演出（背景：応援ペンライト＋金ハート）", "category": "無料", "type": "cheer"},
-        {"id": "M3", "label": "コメント5回投稿", "points": 10, "premium_reward": "「応援マスター」バッジ（銀＋虹）", "category": "無料", "type": "community"},
+        {"id": "M3", "label": "コメント5回投稿", "points": 10, "premium_reward": "「応援マスター」バッ JITジ（銀＋虹）", "category": "無料", "type": "community"},
         {"id": "M10", "label": "ガチャでウルトラレア獲得", "points": 30, "premium_reward": "ウルトラSSR NFT（特別AR演出付き）", "category": "無料", "type": "gacha"},
         {"id": "M15", "label": "レース的中（3回以上）", "points": 20, "premium_reward": "限定ボイス（声優ナレーション）", "category": "無料", "type": "race"},
         {"id": "M20", "label": "コミュニティで全員500コメント達成", "points": 50, "premium_reward": "コミュニティ限定NFT（団結の証）", "category": "無料", "type": "community"},
         {"id": "M30", "label": "推し馬に50HEART投票（パーソナライズ）", "points": 80, "premium_reward": "パーソナライズ背景（推し馬テーマ）", "category": "プレミアム", "type": "cheer"},
-        {"id": "M40", "label": "連勝応援（5連勝）", "points": 120, "premium_reward": "プレミアム専用ガチャチケット（SSR確定）＋限定AR", "category": "プレmiアム", "type": "race"}
+        {"id": "M40", "label": "連勝応援（5連勝）", "points": 120, "premium_reward": "プレミアム専用ガチャチケット（SSR確定）＋限定AR", "category": "プレミアム", "type": "race"}
     ])
 
     if not st.session_state.battle_pass["missions"]:
@@ -497,7 +501,6 @@ elif menu == "バトルパスチャレンジ":
                     if "NFT" in mission["premium_reward"]:
                         nft_item = {"name": mission["premium_reward"], "rarity": "SSR" if "SSR" in mission["premium_reward"] else "レア", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
                         st.session_state.nft_inventory.append(nft_item)
-                # HEART報酬（例：100pt達成で100HEART）
                 if st.session_state.battle_pass["points"] >= 100 and "背景NFT" in mission["premium_reward"]:
                     st.session_state.heart_balance += 100
                     st.session_state.heart_history.append({
@@ -533,16 +536,17 @@ elif menu == "バトルパスチャレンジ":
     for reward in st.session_state.battle_pass["rewards"]:
         st.markdown(f"- {reward}")
 
-# 商品一覧ページ（ステップ㉔）
+# 商品一覧ページ
 elif menu == "商品一覧":
-    try:
-        exec(open("商品一覧.py", encoding="utf-8").read())
-    except FileNotFoundError:
+    if items is None:
         st.error("商品一覧.py が見つかりません。ファイルを確認してください。")
-    except Exception as e:
-        st.error(f"商品一覧ページの読み込み中にエラーが発生しました：{str(e)}")
+    else:
+        try:
+            items.display_items()  # 商品一覧.py内で定義された表示関数を呼び出し
+        except Exception as e:
+            st.error(f"商品一覧ページの読み込み中にエラーが発生しました：{str(e)}")
 
-# HEART残高と履歴（ステップ㉕）
+# HEART残高と履歴
 elif menu == "HEART残高と履歴":
     st.markdown("## HEART残高と利用履歴")
     st.markdown(f"**現在のHEART残高：{st.session_state.heart_balance} HEART**")
@@ -558,7 +562,7 @@ elif menu == "HEART残高と履歴":
     else:
         st.markdown("まだ利用履歴はありません。")
 
-# NFTコレクション（ステップ㉖）
+# NFTコレクション
 elif menu == "NFTコレクション":
     st.markdown("## あなたのNFTコレクション")
     if st.session_state.nft_inventory:
@@ -569,12 +573,13 @@ elif menu == "NFTコレクション":
                 <h5 style='margin-bottom: 4px;'>{item['name']}</h5>
                 <p style='color: white;'>レア度：{item['rarity']}<br>獲得日：{item['timestamp']}</p>
                 <button style='background: white; color: #FF69B4; border: none; padding: 8px 16px; border-radius: 8px;'>Xでシェア</button>
+                <p style='color: white; font-size: 0.9em;'>※このボタンはシェアのプレビューです。本番ではXの共有APIを利用します。</p>
             </div>
             """, unsafe_allow_html=True)
     else:
         st.markdown("まだNFTはありません。商品一覧から購入してください。")
 
-# 管理者用ダッシュボード（ステップ21）
+# 管理者用ダッシュボード
 elif menu == "管理ダッシュボード":
     st.markdown("## 管理者用ダッシュボード")
     st.markdown("### 投票数")

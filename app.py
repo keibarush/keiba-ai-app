@@ -1,4 +1,30 @@
 import streamlit as st
+
+# タイトル
+st.title("VibeCore｜勝利の鼓動 × 勝ちの直感")
+
+# セクション選択
+menu = st.sidebar.radio("機能を選択してください", [
+    "AI競馬予測",
+    "Stripe決済（サブスク／HEART／NFT）",
+    "予想師コミュニティ",
+    "バトルパスチャレンジ",
+    "管理ダッシュボード（任意）"
+])
+
+# 各機能への分岐（あなたが持ってる各機能のコードをここに割り当て）
+if menu == "AI競馬予測":
+    st.write("ここにAI予測コードを貼り付けてください")
+elif menu == "Stripe決済（サブスク／HEART／NFT）":
+    st.write("ここにStripe連携コードを貼り付けてください")
+elif menu == "予想師コミュニティ":
+    st.write("ここにSNS機能コードを貼り付けてください")
+elif menu == "バトルパスチャレンジ":
+    st.write("ここにバトルパスのコードを貼り付けてください")
+elif menu == "管理ダッシュボード（任意）":
+    st.write("ここに管理画面やデータ可視化のコードを貼り付けてください")
+    
+import streamlit as st
 import pandas as pd
 import json
 import os

@@ -100,3 +100,22 @@ else:
                 with st.expander(f"【{label}】を表示"):
                     st.markdown(f"**{explanation_dict[label]}**")
                     st.dataframe(sub_df, use_container_width=True)
+
+st.markdown("---")
+st.markdown("### あなたの直感で選ぶ“推しプロフィール”")
+
+for label in ["本命安定圏", "複勝安定圏", "オッズ妙味圏"]:
+    sub_df = df[df["推し馬ランク"] == label]
+    if not sub_df.empty:
+        st.markdown(f"#### {label}")
+        for _, row in sub_df.iterrows():
+            col1, col2 = st.columns([1, 5])
+            with col1:
+                st.image("https://cdn.pixabay.com/photo/2016/04/01/09/48/horse-1290171_960_720.png", width=60)  # 仮の馬アイコン
+            with col2:
+                st.markdown(f"**馬番 {row['馬番']}**")
+                st.markdown(f"・勝率：{row['勝率（％）']}％")
+                st.markdown(f"・オッズ：{row['オッズ']} 倍")
+                st.markdown(f"・スコア：{row['勝利の鼓動 × 勝ちの直感（％）']}％")
+                st.markdown(f"・ランク：{row['推し馬ランク']}")
+                st.link_button("戦績をみる（netkeiba）", f"https://db.netkeiba.com/horse/{str(row['馬番']).zfill(10)}", use_container_width=True)

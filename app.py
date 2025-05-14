@@ -1,3 +1,18 @@
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+
+# サイドバー
+menu = st.sidebar.radio("メニューを選んでください", [
+    "ホーム",
+    "バトルパスチャレンジ",
+    "商品一覧"
+])
+
+# ホーム
+if menu == "ホーム":
+    st.title("VibeCore ホームへようこそ！")
+    
 # バトルパスチャレンジ（ステップ㉓）
 elif menu == "バトルパスチャレンジ":
     # ミッションCSV（ソロフリーランス向け）

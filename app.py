@@ -29,7 +29,7 @@ st.title("VibeCore｜勝利の鼓動 × 勝ちの直感")
 # サイドバーのメニュー
 menu = st.sidebar.radio("機能を選択してください", [
     "AI競馬予測",
-    "Stripe決済（サブスク／HEART／NFT）",
+    "Stripe決済（サブスク/HEART/NFT）",
     "予想師コミュニティ",
     "バトルパスチャレンジ",
     "商品一覧",

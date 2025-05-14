@@ -155,6 +155,7 @@ if menu == "AI競馬予測":
             rows = []
             for entry in win_probs:
                 horse = get(entry, "horse", "馬番")
+                prob = float(get(entry, "prob", "勝率"))
                 prob = get(entry, "prob", "勝率")
                 odds = odds_dict.get(horse)
 

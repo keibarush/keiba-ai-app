@@ -1,144 +1,81 @@
 import streamlit as st
+import pandas as pd
+from datetime import datetime
 
-# タイトル
-st.title("VibeCore｜勝利の鼓動 × 勝ちの直感")
-
-# セクション選択
-menu = st.sidebar.radio("機能を選択してください", [
-    "AI競馬予測",
-    "Stripe決済（サブスク／HEART／NFT）",
-    "予想師コミュニティ",
-    "バトルパスチャレンジ",
-    "管理ダッシュボード（任意）"
+# ミッションCSV（ソロフリーランス向け）
+missions_df = pd.DataFrame([
+    {"id": "M1", "label": "3日連続ログイン", "points": 10, "premium_reward": "プレミアム称号「ログインスター」", "category": "無料"},
+    {"id": "M2", "label": "推し馬に10HEART投票", "points": 15, "premium_reward": "限定演出（背景：応援ペンライト＋金ハート）", "category": "無料"},
+    {"id": "M3", "label": "コメント5回投稿", "points": 10, "premium_reward": "「応援マスター」バッジ（銀＋虹）", "category": "無料"},
+    {"id": "M10", "label": "ガチャでウルトラレア獲得", "points": 30, "premium_reward": "ウルトラSSR NFT（特別AR演出付き）", "category": "無料"},
+    {"id": "M15", "label": "レース的中（3回以上）", "points": 20, "premium_reward": "限定ボイス（声優ナレーション）", "category": "無料"},
+    {"id": "M20", "label": "コミュニティで1000HEART投票達成", "points": 50, "premium_reward": "コミュニティ限定NFT（団結の証）", "category": "プレミアム"},
+    {"id": "M30", "label": "連勝応援（5連勝）", "points": 100, "premium_reward": "プレミアム専用ガチャチケット（SSR確定）", "category": "プレミアム"}
 ])
 
-# 各機能への分岐（あなたが持ってる各機能のコードをここに割り当て）
-if menu == "AI競馬予測":
-    st.write("ここにAI予測コードを貼り付けてください")
-elif menu == "Stripe決済（サブスク／HEART／NFT）":
-    st.write("ここにStripe連携コードを貼り付けてください")
-elif menu == "予想師コミュニティ":
-    st.write("ここにSNS機能コードを貼り付けてください")
-elif menu == "バトルパスチャレンジ":
-    st.write("ここにバトルパスのコードを貼り付けてください")
-elif menu == "管理ダッシュボード（任意）":
-    st.write("ここに管理画面やデータ可視化のコードを貼り付けてください")
-    
-import streamlit as st
-import pandas as pd
-import json
-import os
-import glob
+# バトルパス状態管理
+if "battle_pass" not in st.session_state:
+    st.session_state.battle_pass = {
+        "points": 0,
+        "missions": {row["id"]: {"done": False, "label": row["label"], "pt": row["points"], "premium_reward": row["premium_reward"], "category": row["category"]} for _, row in missions_df.iterrows()},
+        "premium": False,
+        "rewards": []
+    }
 
-# ページ設定
-st.set_page_config(page_title="VibeCore", layout="wide")
-st.title("VibeCore｜勝利の鼓動 × 勝ちの直感")
+# プレミアム加入チェック
+st.session_state.battle_pass["premium"] = st.checkbox("プレミアムパス加入者（500円/月）")
 
-# SessionStateでチェック状態を保存
-if "checked_horses" not in st.session_state:
-    st.session_state.checked_horses = []
+# タイトル
+st.title("【VibeCore】バトルパス")
 
-# ファイルアップロード（win_ / odds_ のjson）
-st.markdown("### 勝率またはオッズファイルをアップロード（JSON形式）")
-uploaded_file = st.file_uploader("アップロードしてください（例：win_20250514_funa11.json）", type=["json"])
-if uploaded_file is not None:
-    filename = uploaded_file.name
-    if filename.startswith(("win_", "odds_")) and filename.endswith(".json"):
-        save_path = os.path.join(".", filename)
-        with open(save_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        st.success(f"{filename} をアップロードしました")
-    else:
-        st.error("ファイル名が win_ または odds_ で始まる必要があります")
+# ミッション表示
+for key, mission in st.session_state.battle_pass["missions"].items():
+    if not mission["done"] and (mission["category"] == "無料" or st.session_state.battle_pass["premium"]):
+        if st.button(f"ミッション達成：{mission['label']}（{mission['pt']}pt）", key=key):
+            st.session_state.battle_pass["missions"][key]["done"] = True
+            st.session_state.battle_pass["points"] += mission["pt"]
+            if st.session_state.battle_pass["premium"]:
+                st.session_state.battle_pass["rewards"].append(mission["premium_reward"])
+            st.markdown(f"""
+            <div style='text-align: center; padding: 12px; background: linear-gradient(#FFD700, #FF69B4); border-radius: 12px;'>
+                <h4 style='color: white; text-shadow: 1px 1px 2px #000;'>🎉 ミッション達成！ 🎉</h4>
+                <div style='width: 50px; height: 50px; background: #FF69B4; border-radius: 50%; margin: 0 auto; animation: pulse 2s infinite;'></div>
+                <p style='color: white;'>+{mission['pt']}ポイント獲得！</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-# 勝率ファイル一覧を自動取得
-win_files = sorted(glob.glob("win_*.json"))
-race_ids = [f.replace("win_", "").replace(".json", "") for f in win_files]
+# 進行状況ゲージ表示
+progress = min(st.session_state.battle_pass["points"] / 500 * 100, 100)
+gauge_color = "linear-gradient(#FFD700, #FF69B4)" if st.session_state.battle_pass["premium"] else "#FF69B4"
+st.markdown(f"### 現在のバトルパスポイント：{st.session_state.battle_pass['points']}pt")
+st.markdown(f"""
+<div style='width: 100%; height: 20px; background: #E0E0E0; border-radius: 10px; overflow: hidden;'>
+    <div style='width: {progress}%; height: 100%; background: {gauge_color}; animation: grow 1s ease;'></div>
+</div>
+<style>
+@keyframes grow {{
+    0% {{ width: 0%; }}
+    100% {{ width: {progress}%; }}
+}}
+@keyframes pulse {{
+    0% {{ transform: scale(1); box-shadow: 0 0 5px #FF69B4; }}
+    50% {{ transform: scale(1.05); box-shadow: 0 0 15px #FFD700; }}
+    100% {{ transform: scale(1); box-shadow: 0 0 5px #FF69B4; }}
+}}
+</style>
+""", unsafe_allow_html=True)
 
-if not race_ids:
-    st.warning("勝率ファイルが見つかりません。上からアップロードしてください。")
-else:
-    selected_race = st.selectbox("レースを選択してください", race_ids)
+# 報酬表示
+if st.session_state.battle_pass["points"] >= 100:
+    if "背景NFT（虹）" not in st.session_state.battle_pass["rewards"]:
+        st.session_state.battle_pass["rewards"].append("背景NFT（虹）")
+    st.markdown("**✅ 報酬：背景NFT（虹）獲得！**")
+if st.session_state.battle_pass["points"] >= 300 and st.session_state.battle_pass["premium"]:
+    if "SSR NFT + 限定ボイス + 演出" not in st.session_state.battle_pass["rewards"]:
+        st.session_state.battle_pass["rewards"].append("SSR NFT + 限定ボイス + 演出")
+    st.markdown("**✅ プレミアム報酬：SSR NFT + 限定ボイス + 演出 開放！**")
 
-    win_path = f"win_{selected_race}.json"
-    odds_path = f"odds_{selected_race}.json"
-
-    if not os.path.exists(odds_path):
-        st.error(f"オッズファイルが見つかりません: {odds_path}")
-    else:
-        with open(win_path, encoding="utf-8") as f:
-            win_probs = json.load(f)
-        with open(odds_path, encoding="utf-8") as f:
-            odds_data = json.load(f)
-
-        def get(entry, *keys):
-            for key in keys:
-                if key in entry:
-                    return entry[key]
-            return None
-
-        odds_dict = {get(item, "horse", "馬番"): item["odds"] for item in odds_data}
-
-        rows = []
-        for entry in win_probs:
-            horse = get(entry, "horse", "馬番")
-            prob = get(entry, "prob", "勝率")
-            odds = odds_dict.get(horse)
-
-            if odds and prob is not None:
-                if odds > 1.0:
-                    score = (prob * (odds - 1) - (1 - prob)) / (odds - 1)
-                    score = max(0, round(score * 100, 1))
-                else:
-                    score = 0.0
-            else:
-                score = 0.0
-
-            if score >= 50:
-                rank = "本命安定圏"
-            elif score >= 30:
-                rank = "複勝安定圏"
-            elif score >= 10:
-                rank = "オッズ妙味圏"
-            else:
-                rank = "検討外・回避圏"
-
-            rows.append({
-                "馬番": horse,
-                "勝率（％）": round(prob * 100, 1) if prob is not None else None,
-                "オッズ": odds,
-                "勝利の鼓動 × 勝ちの直感（％）": score,
-                "推し馬ランク": rank
-            })
-
-        df = pd.DataFrame(rows)
-        df = df.sort_values("勝利の鼓動 × 勝ちの直感（％）", ascending=False).reset_index(drop=True)
-
-        # 推し馬チェック（保持）
-        st.markdown("### 推し馬チェック")
-        current_check = st.multiselect(
-            "気になる馬を選んでください（保持されます）",
-            options=df["馬番"].tolist(),
-            default=st.session_state.checked_horses
-        )
-        st.session_state.checked_horses = current_check
-
-        st.dataframe(df, use_container_width=True)
-
-        st.markdown("---")
-        st.markdown("### あなたの“推し馬カード”")
-
-        selected_df = df[df["馬番"].isin(st.session_state.checked_horses)]
-        if selected_df.empty:
-            st.info("推し馬を上から選ぶと、ここにカードが出てきます。")
-        else:
-            for _, row in selected_df.iterrows():
-                col1, col2 = st.columns([1, 5])
-                with col1:
-                    st.image("https://cdn.pixabay.com/photo/2016/04/01/09/48/horse-1290171_960_720.png", width=60)
-                with col2:
-                    st.markdown(f"**馬番 {row['馬番']}｜{row['推し馬ランク']}**")
-                    st.markdown(f"- 勝率：{row['勝率（％）']}％")
-                    st.markdown(f"- オッズ：{row['オッズ']} 倍")
-                    st.markdown(f"- スコア：{row['勝利の鼓動 × 勝ちの直感（％）']}％")
-                    st.link_button("netkeiba戦績をみる", f"https://db.netkeiba.com/horse/{str(row['馬番']).zfill(10)}", use_container_width=True)
+# 獲得報酬一覧
+st.markdown("### 獲得報酬")
+for reward in st.session_state.battle_pass["rewards"]:
+    st.markdown(f"- {reward}")

@@ -7,7 +7,11 @@ import glob
 st.set_page_config(page_title="VibeCore", layout="wide")
 st.title("VibeCore｜勝利の鼓動 × 勝ちの直感")
 
-# レースファイル読み込み
+# SessionStateでチェック状態を保存
+if "checked_horses" not in st.session_state:
+    st.session_state.checked_horses = []
+
+# レース選択
 win_files = sorted(glob.glob("win_*.json"))
 race_ids = [f.replace("win_", "").replace(".json", "") for f in win_files]
 
@@ -71,24 +75,23 @@ else:
         df = pd.DataFrame(rows)
         df = df.sort_values("勝利の鼓動 × 勝ちの直感（％）", ascending=False).reset_index(drop=True)
 
-        # チェック列を追加
-        st.markdown("### 推し馬チェック一覧")
-        checked = st.multiselect(
-            "気になる馬を選んでください（複数可）",
+        # 推し馬チェック（SessionState保持）
+        st.markdown("### 推し馬チェック")
+        current_check = st.multiselect(
+            "気になる馬を選んでください（保持されます）",
             options=df["馬番"].tolist(),
-            default=[]
+            default=st.session_state.checked_horses
         )
+        st.session_state.checked_horses = current_check
 
-        # 表示用データ
         st.dataframe(df, use_container_width=True)
 
-        # 推しカードエリア
         st.markdown("---")
         st.markdown("### あなたの“推し馬カード”")
 
-        selected_df = df[df["馬番"].isin(checked)]
+        selected_df = df[df["馬番"].isin(st.session_state.checked_horses)]
         if selected_df.empty:
-            st.info("上から推したい馬を選ぶと、ここにカードが出てきます。")
+            st.info("推し馬を上から選ぶと、ここにカードが出てきます。")
         else:
             for _, row in selected_df.iterrows():
                 col1, col2 = st.columns([1, 5])

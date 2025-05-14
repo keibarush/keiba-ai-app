@@ -2,21 +2,24 @@ import streamlit as st
 import pandas as pd
 import json
 import os
+import glob
 
 st.set_page_config(page_title="VibeCore", layout="wide")
 st.title("VibeCore｜勝利の鼓動 × 勝ちの直感")
 
-# レースID入力
-race_id = st.text_input("レースIDを入力してください（例：20250513_funa11）", "")
+# アップロード済のJSONファイルからレースIDを自動検出
+win_files = sorted(glob.glob("win_*.json"))
+race_ids = [f.replace("win_", "").replace(".json", "") for f in win_files]
 
-# 入力がある場合のみ処理
-if race_id:
-    win_path = f"win_{race_id}.json"
-    odds_path = f"odds_{race_id}.json"
+if not race_ids:
+    st.warning("勝率JSONが見つかりません。win_レースID.json をアップロードしてください。")
+else:
+    selected_race = st.selectbox("表示したいレースを選択してください", race_ids)
 
-    if not os.path.exists(win_path):
-        st.error(f"勝率ファイルが見つかりません: {win_path}")
-    elif not os.path.exists(odds_path):
+    win_path = f"win_{selected_race}.json"
+    odds_path = f"odds_{selected_race}.json"
+
+    if not os.path.exists(odds_path):
         st.error(f"オッズファイルが見つかりません: {odds_path}")
     else:
         with open(win_path, encoding="utf-8") as f:

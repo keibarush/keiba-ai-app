@@ -1,5 +1,7 @@
 [
     {"horse": "1", "prob": 0.3},
     {"horse": "2", "prob": 0.25},
-    {"horse": "3", "prob": 0.2}
+    {"horse": "3", "prob": 0.2},
+    {"horse": "4", "prob": 0.15},
+    {"horse": "5", "prob": 0.1}
 ]

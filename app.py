@@ -29,7 +29,7 @@ st.title("VibeCore｜勝利の鼓動 × 勝ちの直感")
 # サイドバーのメニュー
 menu = st.sidebar.radio("機能を選択してください", [
     "AI競馬予測",
-    "Stripe決済（サブスク/HEART/NFT)",
+    "Stripe決済（サブスク／HEART／NFT）",
     "予想師コミュニティ",
     "バトルパスチャレンジ",
     "商品一覧",
@@ -102,7 +102,7 @@ if st.button("バトルパス進捗を確認", key="quick_battle_pass"):
     st.session_state.menu_select = "バトルパスチャレンジ"
 if st.session_state.purchases:
     if st.button("最近の購入履歴を確認", key="quick_purchases"):
-        st.session_state.menu_select = "Stripe決済(サブスク/HEART/NFT)"
+        st.session_state.menu_select = "Stripe決済（サブスク／HEART／NFT）")
 
 # メニュー選択時の演出
 if menu:

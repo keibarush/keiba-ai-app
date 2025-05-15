@@ -611,8 +611,20 @@ elif menu == "予想師コミュニティ":
     st.markdown("## 予想師コミュニティ")
     user
 
+user = ...
 _id = "user_123"
-    forecast_comment = st.text_input("あなたの予想を投稿", key="forecast_comment")
+
+forecast_comment = st.text_input("あなたの予想を投稿", key="forecast_comment")
+if forecast_comment:
+    forecast_id = f"{user_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    st.session_state.forecasts[forecast_id] = {
+        "user_id": user_id,
+        "comment": forecast_comment,
+        "hearts": 0,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    st.success("予想が投稿されました！")
+    
     if forecast_comment:
         forecast_id = f"{user_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         st.session_state.forecasts[forecast_id] = {

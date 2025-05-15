@@ -7,9 +7,10 @@ import random
 from datetime import datetime
 import stripe
 from dotenv import load_dotenv
-# 商品一覧.pyをインポート（execを避ける）
+
+# items.pyをインポート（商品一覧.pyをリネーム）
 try:
-    import 商品一覧 as items
+    import items
 except ImportError:
     items = None
 
@@ -25,18 +26,6 @@ st.set_page_config(page_title="VibeCore", layout="wide")
 
 # タイトル
 st.title("VibeCore｜勝利の鼓動 × 勝ちの直感")
-
-# サイドバーのメニュー
-menu = st.sidebar.radio("機能を選択してください", [
-    "AI競馬予測",
-    "Stripe決済（サブスク／HEART／NFT）",
-    "予想師コミュニティ",
-    "バトルパスチャレンジ",
-    "商品一覧",
-    "HEART残高と履歴",
-    "NFTコレクション",
-    "管理ダッシュボード"
-], key="menu_select")
 
 # セッション状態の初期化
 if "checked_horses" not in st.session_state:
@@ -71,6 +60,24 @@ if "user_ratings" not in st.session_state:
 if "purchases" not in st.session_state:
     st.session_state.purchases = []
 
+# サイドバーのメニュー
+menu_options = [
+    "AI競馬予測",
+    "Stripe決済（サブスク／HEART／NFT）",
+    "予想師コミュニティ",
+    "バトルパスチャレンジ",
+    "商品一覧",
+    "HEART残高と履歴",
+    "NFTコレクション",
+    "管理ダッシュボード"
+]
+
+# メニュー選択（初期値をセッション状態から取得）
+if "menu_select" not in st.session_state:
+    st.session_state.menu_select = "AI競馬予測"
+
+menu = st.sidebar.radio("機能を選択してください", menu_options, key="menu_select")
+
 # ユーザーカスタム設定
 st.sidebar.markdown("## ユーザーカスタム設定")
 st.session_state.user_settings["accuracy"] = st.sidebar.slider("予測精度（的中重視/穴重視）", 0.0, 1.0, 0.5)
@@ -81,10 +88,9 @@ st.session_state.user_settings["style"] = st.sidebar.selectbox("補正スタイ�
 # メニュー内検索
 search_query = st.sidebar.text_input("メニュー内検索", placeholder="機能名を入力（例：AI競馬予測）")
 if search_query:
-    filtered_menu = [m for m in ["AI競馬予測", "Stripe決済（サブスク／HEART／NFT）", "予想師コミュニティ", "バトルパスチャレンジ", "商品一覧", "HEART残高と履歴", "NFTコレクション", "管理ダッシュボード"] if search_query.lower() in m.lower()]
+    filtered_menu = [m for m in menu_options if search_query.lower() in m.lower()]
     if filtered_menu:
-        menu = filtered_menu[0]
-        st.session_state.menu_select = menu  # 検索結果をUIに反映
+        st.session_state.menu_select = filtered_menu[0]
     else:
         st.sidebar.warning("該当するメニューが見つかりません。")
 
@@ -103,7 +109,7 @@ if st.button("バトルパス進捗を確認", key="quick_battle_pass"):
 if st.session_state.purchases:
     if st.button("最近の購入履歴を確認", key="quick_purchases"):
         st.session_state.menu_select = "Stripe決済（サブスク/HEART/NFT）"
-
+        
 # メニュー選択時の演出
 if menu:
     st.markdown(f"""
@@ -163,7 +169,7 @@ if menu == "AI競馬予測":
                 prob = get(entry, "prob", "勝率")
                 odds = odds_dict.get(horse)
 
-                # ユーザ Hofmannカスタム設定を反映
+                # ユーザーカスタム設定を反映
                 adjusted_prob = 0
                 if prob is not None:
                     adjusted_prob = prob * (1 - st.session_state.user_settings["accuracy"]) + prob * st.session_state.user_settings["emotion"]
@@ -469,7 +475,7 @@ elif menu == "バトルパスチャレンジ":
     missions_df = pd.DataFrame([
         {"id": "M1", "label": "3日連続ログイン", "points": 10, "premium_reward": "プレミアム称号「ログインスター」（金＋虹）", "category": "無料", "type": "daily"},
         {"id": "M2", "label": "推し馬に10HEART投票", "points": 15, "premium_reward": "限定演出（背景：応援ペンライト＋金ハート）", "category": "無料", "type": "cheer"},
-        {"id": "M3", "label": "コメント5回投稿", "points": 10, "premium_reward": "「応援マスター」バッ JITジ（銀＋虹）", "category": "無料", "type": "community"},
+        {"id": "M3", "label": "コメント5回投稿", "points": 10, "premium_reward": "「応援マスター」バッジ（銀＋虹）", "category": "無料", "type": "community"},
         {"id": "M10", "label": "ガチャでウルトラレア獲得", "points": 30, "premium_reward": "ウルトラSSR NFT（特別AR演出付き）", "category": "無料", "type": "gacha"},
         {"id": "M15", "label": "レース的中（3回以上）", "points": 20, "premium_reward": "限定ボイス（声優ナレーション）", "category": "無料", "type": "race"},
         {"id": "M20", "label": "コミュニティで全員500コメント達成", "points": 50, "premium_reward": "コミュニティ限定NFT（団結の証）", "category": "無料", "type": "community"},
@@ -539,10 +545,10 @@ elif menu == "バトルパスチャレンジ":
 # 商品一覧ページ
 elif menu == "商品一覧":
     if items is None:
-        st.error("商品一覧.py が見つかりません。ファイルを確認してください。")
+        st.error("items.py が見つかりません。ファイルを確認してください。")
     else:
         try:
-            items.display_items()  # 商品一覧.py内で定義された表示関数を呼び出し
+            items.display_items()  # items.py内で定義された表示関数を呼び出し
         except Exception as e:
             st.error(f"商品一覧ページの読み込み中にエラーが発生しました：{str(e)}")
 

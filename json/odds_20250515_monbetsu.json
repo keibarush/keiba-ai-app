@@ -1,5 +1,7 @@
 [
-    {"horse": "1", "odds": 2.5},
-    {"horse": "2", "odds": 3.0},
-    {"horse": "3", "odds": 4.0}
+    {"horse": "1", "odds": 3.5},
+    {"horse": "2", "odds": 4.0},
+    {"horse": "3", "odds": 5.0},
+    {"horse": "4", "odds": 6.0},
+    {"horse": "5", "odds": 8.0}
 ]

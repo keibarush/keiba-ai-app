@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 # items.pyをインポート
 try:
     import items
-except ImportError:  a
+except ImportError:
     items = None
 
 # 環境変数読み込み

@@ -1,0 +1,23 @@
+import streamlit as st
+
+# セッション状態の初期化
+if 'menu_select' not in st.session_state:
+    st.session_state.menu_select = "バトルパスチャレンジ"
+
+# 以下、既存のコードを想定（必要に応じて追加）
+st.title("競馬AIアプリケーション")
+st.write("Streamlitで構築された競馬AIアプリへようこそ！")
+
+# メニュー選択の例
+menu = ["ホーム", "バトルパスチャレンジ", "予測", "コミュニティ"]
+choice = st.sidebar.selectbox("メニュー", menu, index=menu.index(st.session_state.menu_select))
+st.session_state.menu_select = choice
+
+if choice == "ホーム":
+    st.write("ホーム画面")
+elif choice == "バトルパスチャレンジ":
+    st.write("バトルパスチャレンジ画面")
+elif choice == "予測":
+    st.write("競馬AI予測画面")
+elif choice == "コミュニティ":
+    st.write("コミュニティ画面")

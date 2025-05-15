@@ -502,7 +502,7 @@ elif menu == "Stripe決済（サブスク／HEART／NFT）":
     st.markdown("## プレミアム応援プラン")
     plan = st.radio("プランを選択", ["ライト（100円/月）", "スタンダード（500円/月）", "VIP（1000円/月）"])
     price_ids = {
-        "ライト（100円/月）": "price_python
+        "ライト（100円/月）": "price_python"
         "スタンダード（500円/月）": "price_xxx",
         "VIP（1000円/月）": "price_xxx"
     }

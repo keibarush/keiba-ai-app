@@ -10,6 +10,10 @@ import stripe
 from dotenv import load_dotenv
 import logging
 
+import logging
+st.set_page_config(page_title="VibeCore", layout="wide")  # ✅ Streamlit設定は必ず最初に！
+logging.basicConfig(level=logging.INFO)
+
 # ログ設定
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -211,7 +215,7 @@ if stripe.api_key == "sk_test_xxx":
     st.warning("Stripe APIキーが設定されていません。テストモードで動作します。")
 
 # ページ設定
-st.set_page_config(page_title="VibeCore", layout="wide")
+
 st.title("VibeCore｜勝利の== 勝利の鼓動 × 勝ちの直感")
 
 # セッション状態の初期化
